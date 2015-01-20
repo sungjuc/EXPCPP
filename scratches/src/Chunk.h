@@ -4,31 +4,39 @@
  *  Created on: Jan 19, 2015
  *      Author: scho
  */
-#include <queue>
+#include <list>
+#include <iterator>
 
 #ifndef CHUNK_H_
 #define CHUNK_H_
 
-template<class Value>
+template<class Value, typename offset_t>
 struct ChunkIter {
 private:
+	std::iterator<std::input_iterator_tag, Value> delta_iterator_;
+
 public:
-	Value next();
-	bool hasNext();
+	ChunkIter(offset_t offset);
+
+	Value Next();
+	bool HasNext();
 };
 
-template<class Value>
+template<class Value, typename offset_t>
 struct Chunk {
 private:
-	uint32_t offset_;
+	offset_t offset_;
 	uint32_t size_;
 	uint32_t first_;
-	std::priority_queue<Value> delta_set_;
+	std::list<Value> main_set_;
+	std::list<Value> delta_set_;
 	Chunk* next_;
 
+	std::list<Value> MaterializeDelta();
+
 public:
-	Chunk(uint32_t offset);
-	Chunk(uint32_t offset, std::priority_queue<Value> set);
+	Chunk(offset_t offset);
+	Chunk(offset_t offset, offset_t next_offset, std::list<Value> set);
 
 	/**
 	 * Returns the number of elements in the chunk.
@@ -40,23 +48,36 @@ public:
 	 * Returns the chunk iterator. The iterator should be lazy iterator.
 	 * @return the chunk iterator.
 	 */
-	ChunkIter<Value> Iterator();
+	ChunkIter<Value, offset_t> Iterator();
 
 	bool Encode();
 
-	bool Encode(Value value);
+	bool Add(Value value);
 };
 
-template<class Value>
-Chunk<Value>::Chunk(uint32_t offset) {
+template<class Value, typename offset_t>
+Chunk<Value, offset_t>::Chunk(offset_t offset) {
 	Chunk::offset_ = offset;
-	Chunk::size_ = 0;
+	// Chunk::next_ = chunk();
+	// Read size
 }
 
-template<class Value>
-uint32_t Chunk<Value>::Size() {
+/**
+ * Creates a chunk at given target with initial data. This chunk is created to encode.
+ */
+template<class Value, typename offset_t>
+Chunk<Value, offset_t>::Chunk(offset_t offset, offset_t next_offset,
+		std::list<Value> set) {
+	Chunk::offset_ = offset;
+	Chunk::main_set_ = set;
+	Chunk::size_ = main_set_.size();
+	Chunk::first_ = main_set_[0];
+	Chunk::next_ = chunk(next_offset);
+}
+
+template<class Value, typename offset_t>
+uint32_t Chunk<Value, offset_t>::Size() {
 	return Chunk::size_;
 }
-
 
 #endif /* CHUNK_H_ */

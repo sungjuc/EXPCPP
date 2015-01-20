@@ -7,8 +7,10 @@
 # include "gtest/gtest.h"
 # include "Chunk.h"
 
+typedef uint32_t offset_t;
+
 TEST(ConstructorTest, negative) {
-	Chunk<int> chunk(123);
+	Chunk<uint32_t, offset_t> chunk(1);
 
 	EXPECT_EQ(chunk.Size(), 0);
 	//EXPECT_EQ(chunk.offset_, 123);
