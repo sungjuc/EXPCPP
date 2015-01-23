@@ -11,7 +11,7 @@
 #define CHUNK_H_
 
 template<class Value, typename offset_t>
-struct ChunkIter {
+class ChunkIter {
 private:
 	std::iterator<std::input_iterator_tag, Value> delta_iterator_;
 
@@ -23,7 +23,7 @@ public:
 };
 
 template<class Value, typename offset_t>
-struct Chunk {
+class Chunk {
 private:
 	offset_t offset_;
 	uint32_t size_;
