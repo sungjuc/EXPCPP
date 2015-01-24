@@ -11,7 +11,7 @@
 
 using namespace graph::utils;
 
-TEST(HashTable, constructor) {
+TEST(HashTableHeader, constructor) {
 	// Prepare memory, test data and create header instance.
 	uint8_t* block = reinterpret_cast<uint8_t *>(malloc(1024));
 
@@ -26,7 +26,6 @@ TEST(HashTable, constructor) {
 	uint32_t h_num_hash_buckets = *reinterpret_cast<uint32_t *>(block + sizeof version_number);
 	uint32_t h_hash_bucket_size_bytes = *reinterpret_cast<uint32_t *>(block + sizeof version_number + sizeof num_hash_buckets);
 
-
 	EXPECT_EQ(header.version_number, version_number);
 	EXPECT_EQ(header.num_hash_buckets, num_hash_buckets);
 	EXPECT_EQ(header.hash_bucket_size_bytes, hash_bucket_size_bytes);
@@ -40,5 +39,4 @@ TEST(HashTable, constructor) {
 	EXPECT_EQ(readHeader.version_number, version_number);
 	EXPECT_EQ(readHeader.num_hash_buckets, num_hash_buckets);
 	EXPECT_EQ(readHeader.hash_bucket_size_bytes, hash_bucket_size_bytes);
-
 }
