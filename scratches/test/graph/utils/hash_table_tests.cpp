@@ -19,7 +19,7 @@ TEST(HashTableHeader, constructor) {
     uint32_t num_hash_buckets = 10; // Number of hash buckets
 	uint32_t hash_bucket_size_bytes = 16; // The size of hash buckets in bytes
 
-	HashTableHeader header(block, version_number, num_hash_buckets, hash_bucket_size_bytes);
+	HashTableHeader header(&block, version_number, num_hash_buckets, hash_bucket_size_bytes);
 
 	// Get the header entries directly from underlying memory and validate them.
 	uint32_t h_version_number = *reinterpret_cast<uint32_t *>(block);
@@ -35,7 +35,7 @@ TEST(HashTableHeader, constructor) {
 	EXPECT_EQ(h_hash_bucket_size_bytes, hash_bucket_size_bytes);
 
 	// Create another header using underlying memory to parse.
-	HashTableHeader readHeader(block, 0);
+	HashTableHeader readHeader(&block, 0);
 	EXPECT_EQ(readHeader.version_number, version_number);
 	EXPECT_EQ(readHeader.num_hash_buckets, num_hash_buckets);
 	EXPECT_EQ(readHeader.hash_bucket_size_bytes, hash_bucket_size_bytes);
