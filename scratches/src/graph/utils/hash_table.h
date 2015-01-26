@@ -27,8 +27,8 @@ struct HashTableHeader {
 		offset = Decode4BytesField(&hash_bucket_size_bytes, offset);
 	}
 
-	HashTableHeader(uint8_t** base_ptr, uint32_t version_number,
-			uint32_t num_hash_buckets, uint32_t hash_bucket_size_bytes) {
+	HashTableHeader(uint8_t** base_ptr, uint32_t version_number, uint32_t num_hash_buckets,
+			uint32_t hash_bucket_size_bytes) {
 		this->base_ptr = base_ptr;
 		this->version_number = version_number;
 		this->num_hash_buckets = num_hash_buckets;
@@ -67,8 +67,9 @@ struct Key {
 	uint16_t size;
 	uint8_t* bytes;
 
-	Key() {}
-	Key(uint8_t* bytes): size(sizeof bytes), bytes(bytes) {}
+	Key(uint16_t size, uint8_t* bytes) :
+			size(size), bytes(bytes) {
+	}
 };
 
 /**
@@ -78,8 +79,9 @@ struct Value {
 	uint16_t size;
 	uint8_t* bytes;
 
-	Value() {}
-	Value(uint8_t* bytes): size(sizeof bytes), bytes(bytes) {}
+	Value(uint16_t size, uint8_t* bytes) :
+			size(size), bytes(bytes) {
+	}
 };
 
 /**
@@ -89,28 +91,34 @@ struct Entry {
 	uint8_t** base_ptr;
 	uint8_t* header;
 	uint16_t key_size;
-	uint8_t key_bytes[];
+	uint8_t* key_bytes;
 	uint16_t value_size;
-	uint8_t value_bytes[];
+	uint8_t* value_bytes;
+	uint32_t offset;
 
 	Entry(uint8_t** base_ptr, uint32_t offset) {
 		this->base_ptr = base_ptr;
-		header = reinterpret_cast<uint8_t *>(**base_ptr + offset);
+		header = reinterpret_cast<uint8_t *>(*this->base_ptr + offset);
+		uint32_t cursor_offset = offset + sizeof *header;
+		key_size = *reinterpret_cast<uint16_t *>(*this->base_ptr + cursor_offset);
+		cursor_offset += sizeof key_size;
+		key_bytes = reinterpret_cast<uint8_t *>(*this->base_ptr + cursor_offset);
+		cursor_offset += key_size;
+		value_size = *(reinterpret_cast<uint16_t *>(*this->base_ptr + cursor_offset));
+		cursor_offset += sizeof value_size;
+		value_bytes = reinterpret_cast<uint8_t *>(*this->base_ptr + cursor_offset);
 	}
 
 	uint32_t GetNextOffset() {
-		return *header || 0x80;
+		if (this->HasNext())
+			return offset + *header | 0x80;
+
+		return 0;
 	}
 
-	bool HasNext(){
-		return *header && 0x80;
+	bool HasNext() {
+		return *header & 0x80;
 	}
-
-	Entry GetNextEntry() {
-		Entry next_entry(this->base_ptr, this->GetNextOffset());
-		return next_entry;
-	}
-
 };
 
 /**
@@ -124,8 +132,9 @@ public:
 		Entry first_entry(this->base_ptr, entry_offset);
 
 		// Iterate over every key
-		for (Entry entry = first_entry; entry.HasNext(); entry = entry.GetNextEntry()) {
-
+		for (Entry entry = first_entry; entry.HasNext();) {
+			Entry next_entry(this->base_ptr, entry.GetNextOffset());
+			entry = next_entry;
 		}
 
 		return false;
@@ -136,7 +145,7 @@ private:
 	HashTableHeader header_;
 	uint32_t Hash(const Key& key) {
 		uint32_t sum = 0;
-		for(uint16_t i = 0; i< key.size; ++i) {
+		for (uint16_t i = 0; i < key.size; ++i) {
 			sum += key.bytes[i];
 		}
 
